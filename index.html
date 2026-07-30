@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Horario Universitario</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h2>Agrega un Curso</h2>
+    <!-- Formulario de ingreso de datos -->
+    <div class="form-container">
+        <input type="text" id="course-name" placeholder="Ej: Matemática Financiera" required>
+        <select id="day-select">
+            <option value="lunes">Lunes</option>
+            <option value="martes">Martes</option>
+            <option value="miercoles">Miércoles</option>
+            <option value="jueves">Jueves</option>
+            <option value="viernes">Viernes</option>
+        </select>
+        <input type="time" id="start-time" required>
+        <input type="time" id="end-time" required>
+        <button onclick="addCourse()">Agregar al Horario</button>
+    </div>
+
+    <!-- Cuadrícula del Calendario -->
+    <div class="calendar-container">
+        <div class="time-column">
+            <!-- Horas referenciales -->
+            <div>7 AM</div><div>8 AM</div><div>9 AM</div><div>10 AM</div>
+            <div>11 AM</div><div>12 PM</div><div>1 PM</div><div>2 PM</div>
+        </div>
+        <!-- Columnas de los días -->
+        <div class="day-column" id="lunes"><h3>Lun</h3></div>
+        <div class="day-column" id="martes"><h3>Mar</h3></div>
+        <div class="day-column" id="miercoles"><h3>Mié</h3></div>
+        <div class="day-column" id="jueves"><h3>Jue</h3></div>
+        <div class="day-column" id="viernes"><h3>Vie</h3></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
