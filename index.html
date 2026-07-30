@@ -4,16 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simulador de Horario Universitario</title>
-    <!-- Usamos la fuente Roboto, típica de las interfaces de Google -->
+    
+    <!-- Fuentes e Íconos de Google -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    
+    <!-- Librería para exportar a PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <style>
         :root {
             --primary-color: #1a73e8;
-            --bg-color: #f8f9fa;
-            --border-color: #dadce0;
-            --text-main: #3c4043;
-            --text-muted: #70757a;
-            --hour-height: 60px; /* Altura de cada hora en la cuadrícula */
+            --primary-hover: #1557b0;
+            --bg-color: #f0f2f5;
+            --surface-color: #ffffff;
+            --border-color: #e0e0e0;
+            --text-main: #202124;
+            --text-muted: #5f6368;
+            --hour-height: 65px;
+            --sidebar-width: 320px;
         }
 
         * {
@@ -27,104 +36,226 @@
             background-color: var(--bg-color);
             color: var(--text-main);
             display: flex;
-            flex-direction: column;
             height: 100vh;
+            overflow: hidden;
         }
 
-        /* --- Panel superior (Formulario) --- */
-        .header {
-            background-color: white;
-            padding: 20px;
+        /* --- Panel lateral (Controles) --- */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--surface-color);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+            z-index: 20;
+            overflow-y: auto;
+        }
+
+        .brand {
+            padding: 24px 20px;
             border-bottom: 1px solid var(--border-color);
             display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
             align-items: center;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-            z-index: 10;
+            gap: 12px;
         }
 
-        .header h1 {
-            font-size: 22px;
-            margin-right: 20px;
-            color: var(--text-main);
+        .brand span {
+            color: var(--primary-color);
+            font-size: 28px;
         }
 
-        .form-group {
+        .brand h1 {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .form-section {
+            padding: 20px;
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* --- STREAMING_CHUNK:Estilizando los inputs y controles... --- */
+        .input-group {
+            display: flex;
+            flex-direction: column;
             gap: 8px;
         }
 
-        input, select, button {
-            padding: 8px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
+        .input-group label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .input-group label span.material-symbols-outlined {
+            font-size: 16px;
+        }
+
+        input[type="text"], select, input[type="time"] {
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
             font-size: 14px;
             font-family: inherit;
             outline: none;
-            transition: border-color 0.2s;
+            transition: all 0.2s;
+            background-color: #f8f9fa;
         }
 
-        input:focus, select:focus {
+        input[type="text"]:focus, select:focus, input[type="time"]:focus {
             border-color: var(--primary-color);
+            background-color: #fff;
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.2);
         }
 
-        button {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
+        .time-range {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        button:hover {
-            background-color: #1557b0;
+        .time-range input {
+            flex: 1;
+        }
+
+        /* Selector de colores mejorado */
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
         }
         
-        button:active {
-            transform: scale(0.98);
-        }
-
-        /* Selector de colores */
-        .color-selector {
-            display: flex;
-            gap: 5px;
-        }
         .color-option {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 8px;
             cursor: pointer;
             border: 2px solid transparent;
-            transition: transform 0.2s;
+            transition: transform 0.2s, border-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        .color-option:hover { transform: scale(1.1); }
-        .color-option.selected { border-color: #333; transform: scale(1.1); }
 
-        /* --- Contenedor Principal del Calendario --- */
-        .calendar-container {
+        .color-option:hover { transform: scale(1.1); }
+        .color-option.selected { 
+            border-color: var(--text-main); 
+            transform: scale(1.1);
+        }
+        .color-option.selected::after {
+            content: 'done';
+            font-family: 'Material Symbols Outlined';
+            color: white;
+            font-size: 16px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .custom-color-wrapper {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(45deg, #f44336, #ff9800, #ffeb3b, #4caf50, #2196f3, #9c27b0);
+        }
+        .custom-color-wrapper input[type="color"] {
+            position: absolute;
+            top: -10px; left: -10px; width: 100px; height: 100px;
+            cursor: pointer; opacity: 0;
+        }
+
+        /* Botones */
+        .btn {
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+
+        .btn-secondary {
+            background-color: white;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+        .btn-secondary:hover { background-color: #f1f3f4; }
+
+        .btn-danger {
+            background-color: #fce8e6;
+            color: #d93025;
+            margin-top: auto;
+            border: 1px solid #fad2cf;
+        }
+        .btn-danger:hover { background-color: #fad2cf; }
+
+        .actions-bottom {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: auto;
+        }
+
+        /* --- STREAMING_CHUNK:Área principal del calendario... --- */
+        .main-content {
             flex: 1;
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            margin: 20px;
-            background: white;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            background-color: var(--bg-color);
+            padding: 20px;
         }
 
-        /* --- Cabecera de los días --- */
+        .calendar-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .calendar-header-toolbar {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .calendar-header-toolbar h2 {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        /* Cabecera de los días */
         .days-header {
             display: flex;
             border-bottom: 1px solid var(--border-color);
-            background-color: white;
+            background-color: var(--surface-color);
         }
 
         .time-spacer {
-            width: 60px; /* Espacio para alinear con la columna de horas */
+            width: 70px;
             flex-shrink: 0;
             border-right: 1px solid var(--border-color);
         }
@@ -132,28 +263,38 @@
         .day-name {
             flex: 1;
             text-align: center;
-            padding: 15px 0;
+            padding: 16px 0;
             font-weight: 500;
             color: var(--text-muted);
             border-right: 1px solid var(--border-color);
-            text-transform: uppercase;
-            font-size: 12px;
-            letter-spacing: 0.5px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
         .day-name:last-child { border-right: none; }
+        .day-name .short { font-size: 12px; text-transform: uppercase; }
+        .day-name .full { font-size: 16px; color: var(--text-main); }
+        .day-name.weekend .full { color: var(--primary-color); }
 
-        /* --- Cuadrícula desplazable --- */
+        /* Cuadrícula desplazable */
         .calendar-scroll {
             flex: 1;
             overflow-y: auto;
             display: flex;
             position: relative;
+            background-color: var(--surface-color);
+        }
+
+        /* Clase para cuando exportamos a PDF (evita recortes) */
+        .pdf-export-mode .calendar-scroll {
+            overflow: visible !important;
+            height: auto !important;
         }
 
         .time-column {
-            width: 60px;
+            width: 70px;
             flex-shrink: 0;
-            background-color: white;
+            background-color: var(--surface-color);
             border-right: 1px solid var(--border-color);
             position: relative;
         }
@@ -161,18 +302,17 @@
         .time-label {
             height: var(--hour-height);
             text-align: right;
-            padding-right: 8px;
+            padding-right: 12px;
             color: var(--text-muted);
-            font-size: 11px;
+            font-size: 12px;
             position: relative;
-            top: -6px; /* Centrar el texto con la línea */
+            top: -8px;
         }
 
         .grid-container {
             flex: 1;
             display: flex;
             position: relative;
-            /* Fondo de cuadrícula lineal (las líneas horizontales) */
             background-image: linear-gradient(to bottom, var(--border-color) 1px, transparent 1px);
             background-size: 100% var(--hour-height);
         }
@@ -184,34 +324,38 @@
         }
         .day-col:last-child { border-right: none; }
 
-        /* --- Estilos de las Tarjetas de Curso --- */
+        /* --- STREAMING_CHUNK:Tarjetas de curso e interacciones... --- */
         .course-card {
             position: absolute;
-            left: 2px;
-            right: 2px;
-            border-radius: 4px;
-            padding: 6px 8px;
+            left: 4px;
+            right: 4px;
+            border-radius: 6px;
+            padding: 8px 10px;
             color: white;
             font-size: 12px;
-            line-height: 1.3;
+            line-height: 1.4;
             overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
-            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            transition: all 0.2s ease;
             z-index: 5;
+            display: flex;
+            flex-direction: column;
         }
 
         .course-card:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
             z-index: 15;
             filter: brightness(1.05);
         }
 
         .course-title {
             font-weight: 700;
-            margin-bottom: 3px;
-            white-space: nowrap;
+            font-size: 13px;
+            margin-bottom: 4px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* Máximo 2 líneas */
+            -webkit-box-orient: vertical;
             overflow: hidden;
             text-overflow: ellipsis;
         }
@@ -219,144 +363,248 @@
         .course-time {
             font-size: 11px;
             opacity: 0.9;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
-        /* Pequeña animación al agregar */
-        @keyframes popIn {
-            0% { transform: scale(0.9); opacity: 0; }
+        .course-time span.material-symbols-outlined {
+            font-size: 12px;
+        }
+
+        /* Botón de eliminar (Aparece al hacer hover) */
+        .delete-course-btn {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 24px;
+            height: 24px;
+            background: rgba(255,255,255,0.25);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.2s;
+            backdrop-filter: blur(2px);
+        }
+
+        .course-card:hover .delete-course-btn {
+            opacity: 1;
+        }
+
+        .delete-course-btn:hover {
+            background: #d93025;
+            color: white;
+        }
+        
+        .delete-course-btn span {
+            font-size: 16px;
+        }
+
+        @keyframes fadeInScale {
+            0% { transform: scale(0.95); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
-        .anim-pop { animation: popIn 0.3s ease-out forwards; }
+        .anim-pop { animation: fadeInScale 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
 
     </style>
 </head>
 <body>
 
-    <!-- Panel de Controles -->
-    <header class="header">
-        <h1>🗓️ Mi Horario Universitario</h1>
-        
-        <div class="form-group">
-            <input type="text" id="course-name" placeholder="Ej: Matemática Financiera" required autocomplete="off">
+    <aside class="sidebar">
+        <div class="brand">
+            <span class="material-symbols-outlined">calendar_month</span>
+            <h1>Mi Horario</h1>
         </div>
 
-        <div class="form-group">
-            <select id="day-select">
-                <option value="lunes">Lunes</option>
-                <option value="martes">Martes</option>
-                <option value="miercoles">Miércoles</option>
-                <option value="jueves">Jueves</option>
-                <option value="viernes">Viernes</option>
-                <option value="sabado">Sábado</option>
-                <option value="domingo">Domingo</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <input type="time" id="start-time" value="07:00" required>
-            <span>a</span>
-            <input type="time" id="end-time" value="09:00" required>
-        </div>
-
-        <div class="form-group color-selector" id="color-selector">
-            <!-- Paleta de colores inspirada en tu imagen -->
-            <div class="color-option selected" style="background-color: #0F9D58;" data-color="#0F9D58"></div> <!-- Verde -->
-            <div class="color-option" style="background-color: #9C27B0;" data-color="#9C27B0"></div> <!-- Morado -->
-            <div class="color-option" style="background-color: #4285F4;" data-color="#4285F4"></div> <!-- Azul -->
-            <div class="color-option" style="background-color: #EA4335;" data-color="#EA4335"></div> <!-- Rojo -->
-            <div class="color-option" style="background-color: #F4B400;" data-color="#F4B400"></div> <!-- Amarillo -->
-        </div>
-
-        <button onclick="addCourse()">+ Agregar Curso</button>
-        <button onclick="clearAll()" style="background-color: #ea4335; margin-left: auto;">Limpiar Todo</button>
-    </header>
-
-    <!-- Calendario Visual -->
-    <div class="calendar-container">
-        <!-- Cabecera de días -->
-        <div class="days-header">
-            <div class="time-spacer"></div>
-            <div class="day-name">Lunes</div>
-            <div class="day-name">Martes</div>
-            <div class="day-name">Miércoles</div>
-            <div class="day-name">Jueves</div>
-            <div class="day-name">Viernes</div>
-            <div class="day-name" style="color: #1a73e8;">Sábado</div>
-            <div class="day-name" style="color: #ea4335;">Domingo</div>
-        </div>
-
-        <!-- Área desplazable (horas y columnas) -->
-        <div class="calendar-scroll" id="calendar-scroll">
-            
-            <!-- Eje Y: Horas -->
-            <div class="time-column" id="time-labels">
-                <!-- Se generará por JS desde las 7 AM hasta las 10 PM -->
+        <div class="form-section">
+            <div class="input-group">
+                <label for="course-name">
+                    <span class="material-symbols-outlined">book</span> Nombre del curso
+                </label>
+                <input type="text" id="course-name" placeholder="Ej: Diseño de Software" autocomplete="off">
             </div>
 
-            <!-- Eje X: Columnas de los días -->
-            <div class="grid-container">
-                <div class="day-col" id="lunes"></div>
-                <div class="day-col" id="martes"></div>
-                <div class="day-col" id="miercoles"></div>
-                <div class="day-col" id="jueves"></div>
-                <div class="day-col" id="viernes"></div>
-                <div class="day-col" id="sabado"></div>
-                <div class="day-col" id="domingo"></div>
+            <div class="input-group">
+                <label for="day-select">
+                    <span class="material-symbols-outlined">today</span> Día de la semana
+                </label>
+                <select id="day-select">
+                    <option value="lunes">Lunes</option>
+                    <option value="martes">Martes</option>
+                    <option value="miercoles">Miércoles</option>
+                    <option value="jueves">Jueves</option>
+                    <option value="viernes">Viernes</option>
+                    <option value="sabado">Sábado</option>
+                    <option value="domingo">Domingo</option>
+                </select>
             </div>
-            
+
+            <div class="input-group">
+                <label>
+                    <span class="material-symbols-outlined">schedule</span> Horario
+                </label>
+                <div class="time-range">
+                    <input type="time" id="start-time" value="08:00">
+                    <span style="color:var(--text-muted)">a</span>
+                    <input type="time" id="end-time" value="10:00">
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>
+                    <span class="material-symbols-outlined">palette</span> Color de la tarjeta
+                </label>
+                <div class="color-grid" id="color-selector">
+                    <!-- Presets -->
+                    <div class="color-option selected" style="background-color: #0F9D58;" data-color="#0F9D58"></div> <!-- Verde -->
+                    <div class="color-option" style="background-color: #4285F4;" data-color="#4285F4"></div> <!-- Azul -->
+                    <div class="color-option" style="background-color: #9C27B0;" data-color="#9C27B0"></div> <!-- Morado -->
+                    <div class="color-option" style="background-color: #EA4335;" data-color="#EA4335"></div> <!-- Rojo -->
+                    <div class="color-option" style="background-color: #F4B400;" data-color="#F4B400"></div> <!-- Amarillo -->
+                    <div class="color-option" style="background-color: #00BCD4;" data-color="#00BCD4"></div> <!-- Cyan -->
+                    <div class="color-option" style="background-color: #E91E63;" data-color="#E91E63"></div> <!-- Rosa -->
+                    <div class="color-option" style="background-color: #FF5722;" data-color="#FF5722"></div> <!-- Naranja Profundo -->
+                    <div class="color-option" style="background-color: #607D8B;" data-color="#607D8B"></div> <!-- Azul Grisáceo -->
+                    
+                    <!-- Color Personalizado (Arcoiris) -->
+                    <div class="color-option custom-color-wrapper" title="Elige tu propio color">
+                        <input type="color" id="custom-color-input" value="#333333">
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="addCourse()">
+                <span class="material-symbols-outlined">add_circle</span> Añadir Curso
+            </button>
         </div>
-    </div>
+
+        <div class="actions-bottom">
+            <button class="btn btn-secondary" onclick="exportToPDF()">
+                <span class="material-symbols-outlined">picture_as_pdf</span> Exportar a PDF
+            </button>
+            <button class="btn btn-danger" onclick="clearAll()">
+                <span class="material-symbols-outlined">delete_sweep</span> Limpiar Calendario
+            </button>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <div class="calendar-card" id="exportable-area">
+            
+            <div class="calendar-header-toolbar" data-html2canvas-ignore>
+                <h2>Vista Previa del Semestre</h2>
+                <!-- Aquí se podrían poner flechas de semanas, pero para el simulador estático lo mantenemos simple -->
+            </div>
+
+            <!-- Cabecera de días -->
+            <div class="days-header">
+                <div class="time-spacer"></div>
+                <div class="day-name"><span class="short">Lun</span><span class="full">Lunes</span></div>
+                <div class="day-name"><span class="short">Mar</span><span class="full">Martes</span></div>
+                <div class="day-name"><span class="short">Mié</span><span class="full">Miércoles</span></div>
+                <div class="day-name"><span class="short">Jue</span><span class="full">Jueves</span></div>
+                <div class="day-name"><span class="short">Vie</span><span class="full">Viernes</span></div>
+                <div class="day-name weekend"><span class="short">Sáb</span><span class="full">Sábado</span></div>
+                <div class="day-name weekend"><span class="short">Dom</span><span class="full">Domingo</span></div>
+            </div>
+
+            <!-- Área desplazable con la cuadrícula -->
+            <div class="calendar-scroll" id="calendar-scroll">
+                <!-- Eje Y: Horas -->
+                <div class="time-column" id="time-labels"></div>
+
+                <!-- Eje X: Columnas de los días -->
+                <div class="grid-container">
+                    <div class="day-col" id="lunes"></div>
+                    <div class="day-col" id="martes"></div>
+                    <div class="day-col" id="miercoles"></div>
+                    <div class="day-col" id="jueves"></div>
+                    <div class="day-col" id="viernes"></div>
+                    <div class="day-col" id="sabado"></div>
+                    <div class="day-col" id="domingo"></div>
+                </div>
+            </div>
+        </div>
+    </main>
 
     <script>
-        // --- Variables Globales ---
-        const START_HOUR = 7; // El calendario empieza a las 7:00
-        const END_HOUR = 22;  // Termina a las 22:00 (10 PM)
-        let selectedColor = '#0F9D58'; // Color por defecto
+        const START_HOUR = 7; 
+        const END_HOUR = 23;  // Hasta las 11 PM
+        let selectedColor = '#0F9D58'; 
         let courses = JSON.parse(localStorage.getItem('myCourses')) || [];
 
-        // --- Inicialización ---
         document.addEventListener('DOMContentLoaded', () => {
             renderTimeLabels();
             setupColorSelector();
             renderAllCourses();
         });
 
-        // Genera las etiquetas de las horas en la columna izquierda
+        // 1. Dibuja la barra izquierda de horas (7 AM, 8 AM...)
         function renderTimeLabels() {
             const timeCol = document.getElementById('time-labels');
             for (let i = START_HOUR; i <= END_HOUR; i++) {
                 const label = document.createElement('div');
                 label.className = 'time-label';
-                // Formatear la hora (ej. 7 AM, 12 PM, 3 PM)
-                const displayHour = i > 12 ? i - 12 : i;
-                const amPm = i >= 12 ? 'PM' : 'AM';
+                
+                const displayHour = i > 12 ? i - 12 : (i === 0 ? 12 : i);
+                const amPm = i >= 12 && i < 24 ? 'PM' : 'AM';
+                
+                // Ocultar texto en la primera hora para alinear estética de cuadrícula
                 label.innerText = i === START_HOUR ? '' : `${displayHour} ${amPm}`; 
-                // Evitamos poner texto en la primera hora para alinear el grid visualmente
                 timeCol.appendChild(label);
             }
         }
 
-        // Lógica del selector de color
+        // 2. Lógica del panel de colores
         function setupColorSelector() {
-            const options = document.querySelectorAll('.color-option');
+            const options = document.querySelectorAll('.color-option:not(.custom-color-wrapper)');
+            const customInput = document.getElementById('custom-color-input');
+            const customWrapper = document.querySelector('.custom-color-wrapper');
+
+            // Clic en colores predefinidos
             options.forEach(option => {
                 option.addEventListener('click', (e) => {
-                    options.forEach(opt => opt.classList.remove('selected'));
-                    e.target.classList.add('selected');
-                    selectedColor = e.target.getAttribute('data-color');
+                    clearColorSelection();
+                    e.currentTarget.classList.add('selected');
+                    selectedColor = e.currentTarget.getAttribute('data-color');
                 });
+            });
+
+            // Uso del selector de color personalizado
+            customInput.addEventListener('input', (e) => {
+                clearColorSelection();
+                customWrapper.classList.add('selected');
+                selectedColor = e.target.value;
+                customWrapper.style.background = selectedColor; // Quita el arcoíris al seleccionar uno
             });
         }
 
-        // Convierte hora en formato "HH:MM" a un valor en píxeles
+        function clearColorSelection() {
+            document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+        }
+
+        // 3. Conversión de tiempo a posición vertical (Píxeles)
         function timeToPixels(timeString) {
             const [hours, minutes] = timeString.split(':').map(Number);
             const totalMinutes = (hours - START_HOUR) * 60 + minutes;
-            // Como 1 hora = 60px (definido en CSS), 1 minuto = 1px
-            return totalMinutes; 
+            // var(--hour-height) es 65px. Entonces 1 minuto = 65/60 px.
+            return totalMinutes * (65 / 60); 
         }
 
-        // Agrega un curso nuevo desde el formulario
+        // Formatea la hora de 24h a 12h (Ej: 14:30 -> 2:30 PM)
+        function format12Hour(timeString) {
+            let [h, m] = timeString.split(':').map(Number);
+            const ampm = h >= 12 ? 'pm' : 'am';
+            h = h % 12;
+            h = h ? h : 12; 
+            const mStr = m < 10 ? '0'+m : m;
+            return `${h}:${mStr}${ampm}`;
+        }
+
+        // 4. Función Principal: Añadir Curso
         function addCourse() {
             const nameInput = document.getElementById('course-name');
             const dayInput = document.getElementById('day-select');
@@ -368,14 +616,23 @@
             const startTime = startTimeInput.value;
             const endTime = endTimeInput.value;
 
-            // Validaciones básicas
-            if (!name) return alert("Por favor ingresa el nombre del curso.");
-            if (startTime >= endTime) return alert("La hora de fin debe ser posterior a la de inicio.");
+            if (!name) {
+                alert("Por favor ingresa el nombre del curso.");
+                nameInput.focus();
+                return;
+            }
+            if (startTime >= endTime) {
+                alert("La hora de fin debe ser posterior a la de inicio.");
+                return;
+            }
             
             const startPx = timeToPixels(startTime);
             const endPx = timeToPixels(endTime);
 
-            if (startPx < 0) return alert(`El horario debe empezar después de las ${START_HOUR}:00 AM`);
+            if (startPx < 0) {
+                alert(`El horario debe empezar después de las ${START_HOUR}:00 AM`);
+                return;
+            }
 
             const newCourse = {
                 id: Date.now().toString(),
@@ -392,12 +649,11 @@
             saveCourses();
             renderCourseOnScreen(newCourse, true);
             
-            // Limpiar input de texto
             nameInput.value = '';
             nameInput.focus();
         }
 
-        // Renderiza un solo curso en el DOM
+        // 5. Renderizar Curso en el DOM
         function renderCourseOnScreen(course, animate = false) {
             const col = document.getElementById(course.day);
             if (!col) return;
@@ -411,53 +667,82 @@
             card.style.height = `${course.height}px`;
             card.id = `course-${course.id}`;
 
-            // Formatear horas para mostrar (ej: 07:30 - 09:00)
-            card.innerHTML = `
-                <div class="course-title">${course.name}</div>
-                <div class="course-time">${course.startTime} - ${course.endTime}</div>
-            `;
+            const timeStr = `${format12Hour(course.startTime)} - ${format12Hour(course.endTime)}`;
 
-            // Al hacer clic, preguntar si se desea eliminar
-            card.addEventListener('click', () => {
-                if (confirm(`¿Deseas eliminar el curso "${course.name}"?`)) {
-                    removeCourse(course.id);
-                }
-            });
+            card.innerHTML = `
+                <div class="course-title" title="${course.name}">${course.name}</div>
+                <div class="course-time">
+                    <span class="material-symbols-outlined">schedule</span>
+                    ${timeStr}
+                </div>
+                <div class="delete-course-btn" title="Eliminar clase" onclick="removeCourse('${course.id}')" data-html2canvas-ignore>
+                    <span class="material-symbols-outlined">delete</span>
+                </div>
+            `;
 
             col.appendChild(card);
         }
 
-        // Renderiza todos los cursos al cargar la página
+        // 6. Funciones de Gestión y Persistencia
         function renderAllCourses() {
-            // Limpiar columnas primero
             document.querySelectorAll('.day-col').forEach(col => col.innerHTML = '');
             courses.forEach(course => renderCourseOnScreen(course));
         }
 
-        // Elimina un curso específico
         function removeCourse(id) {
-            courses = courses.filter(c => c.id !== id);
-            saveCourses();
-            const el = document.getElementById(`course-${id}`);
-            if (el) {
-                el.style.transform = 'scale(0.8)';
-                el.style.opacity = '0';
-                setTimeout(() => el.remove(), 200); // Pequeño efecto de salida
+            if (confirm("¿Eliminar este bloque de curso?")) {
+                courses = courses.filter(c => c.id !== id);
+                saveCourses();
+                const el = document.getElementById(`course-${id}`);
+                if (el) {
+                    el.style.transform = 'scale(0.9)';
+                    el.style.opacity = '0';
+                    setTimeout(() => el.remove(), 200);
+                }
             }
         }
 
-        // Borra todo
         function clearAll() {
-            if (confirm("¿Estás seguro de que quieres borrar todo tu horario?")) {
+            if (courses.length === 0) return;
+            if (confirm("¿Estás seguro de que quieres borrar todo tu horario? Esta acción no se puede deshacer.")) {
                 courses = [];
                 saveCourses();
                 renderAllCourses();
             }
         }
 
-        // Guarda en el almacenamiento local del navegador
         function saveCourses() {
             localStorage.setItem('myCourses', JSON.stringify(courses));
+        }
+
+        // --- STREAMING_CHUNK:Lógica para Exportar a PDF... ---
+        function exportToPDF() {
+            if(courses.length === 0) {
+                alert("Agrega al menos un curso antes de exportar.");
+                return;
+            }
+
+            // Preparar el elemento para exportación
+            const element = document.getElementById('exportable-area');
+            const container = document.querySelector('.calendar-card');
+            
+            // Añadir clase para expandir todo el contenido oculto por el scroll
+            container.classList.add('pdf-export-mode');
+
+            // Configuración de html2pdf
+            const opt = {
+                margin:       10,
+                filename:     'Mi_Horario_Universitario.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+            };
+
+            // Generar y descargar
+            html2pdf().set(opt).from(element).save().then(() => {
+                // Restaurar el diseño original quitando la clase
+                container.classList.remove('pdf-export-mode');
+            });
         }
     </script>
 </body>
